@@ -22,7 +22,26 @@ public class ReportServiceImpl implements ReportService {
     @Autowired
     private RoomEndpoint roomEndpoint;
 
-    public Report generateReport(ReportRequest request) throws Exception {
+    @Override
+    public Report updateReport(ReportRequest request) throws Exception {
+        CodeStruct codeStruct = new CodeStruct("c", request.getCode());
+        Map<String, String> map = compile.compile(codeStruct);
+
+        // retrieve report based on room code
+        return reportRepository.findReportByRoomCode(request.getRoomCode()).map(
+                report -> {
+                    report.setCode(request.getCode());
+                    report.setOutput(map.get("stdout"));
+                    report.setIntervieweeName(request.getIntervieweeName());
+
+                    reportRepository.save(report);
+                    return report;
+                }).orElseThrow(
+                        () -> new Exception("Failed to find report!"));
+    }
+
+    @Override
+    public Report generateReport(CreateReport request) throws Exception {
         try {
             CodeStruct codeStruct = new CodeStruct("c", request.getCode());
             Map<String, String> map = roomEndpoint.compile(codeStruct);
